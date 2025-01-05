@@ -1,6 +1,7 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const dotenv = require('dotenv');
+const books = require('./data/books');
 
 const app = express();
 app.use(express.json());
@@ -49,14 +50,7 @@ app.get("/api/status", (req, res) => {
 });
 
 app.get("/api/booklist", (req, res) => {
-    const { page = 1, limit = 10 } = req.query;
-    const startIndex = (page - 1) * limit;
-    const endIndex = startIndex + parseInt(limit);
-
-    res.status(200).send({
-        totalBooks: bookArray.length,
-        books: bookArray.slice(startIndex, endIndex)
-    });
+    res.status(200).send(books.getBooks(req));
 });
 
 const verifyPayload = ((req, res, next) => {
@@ -68,8 +62,7 @@ const verifyPayload = ((req, res, next) => {
 });
 
 app.post("/api/addbook", authenticateToken, verifyPayload, (req, res) => {
-    const newBook = { "id": bookID++, title, author, year, genre };
-    bookArray.push(newBook);
+    const newBook = books.addBook(req.body);
     res.status(201).send(newBook);
 })
 
