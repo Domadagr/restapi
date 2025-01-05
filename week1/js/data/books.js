@@ -41,4 +41,12 @@ const addBook = ((book) => {
     return newBook;
 });
 
-module.exports = { getBooks, addBook };
+const verifyPayload = ((req, res, next) => {
+    const { title, author, year, genre } = req.body;
+    if (!title || !author || !year || !genre) {
+        return res.status(400).send({ error: "All fields required: Title, Author, Year, Genre" });
+    }
+    next();
+});
+
+module.exports = { getBooks, addBook, verifyPayload };

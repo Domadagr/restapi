@@ -53,15 +53,8 @@ app.get("/api/booklist", (req, res) => {
     res.status(200).send(books.getBooks(req));
 });
 
-const verifyPayload = ((req, res, next) => {
-    const { title, author, year, genre } = req.body;
-    if (!title || !author || !year || !genre) {
-        return res.status(400).send({ error: "All fields required: Title, Author, Year, Genre" });
-    }
-    next();
-});
 
-app.post("/api/addbook", authenticateToken, verifyPayload, (req, res) => {
+app.post("/api/addbook", authenticateToken, books.verifyPayload, (req, res) => {
     const newBook = books.addBook(req.body);
     res.status(201).send(newBook);
 })
