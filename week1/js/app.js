@@ -83,31 +83,3 @@ app.delete('/api/booklist/deletebook/:id', authenticateToken, (req, res) => {
     }
     res.status(200).send(book);
 });
-
-
-
-let bookArray = [];
-
-// Added a couple of initial books
-bookArray.push({
-    "id": bookID++,
-    "title": "lets make it count", 
-    "author": "pointy pencil", 
-    "year": 1992, 
-    "genre": "sci-fi"
-});
-bookArray.push({
-    "id": bookID++,
-    "title": "lizard people", 
-    "author": "tinfoil hat", 
-    "year": 2017, 
-    "genre": "sci-fi"
-});
-bookArray.push({
-    "id": bookID++,
-    "title": "Divergent Aperture Harmonics", 
-    "author": "Domadagr", 
-    "year": 2025, 
-    "genre": "biography"
-});
-
