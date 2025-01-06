@@ -50,52 +50,38 @@ app.get("/api/status", (req, res) => {
 });
 
 app.get("/api/booklist", (req, res) => {
-    res.status(200).send(books.getBooks(req));
+    res.status(200).send(books.getBooklist(req));
 });
 
-
-app.post("/api/addbook", authenticateToken, books.verifyPayload, (req, res) => {
+app.post("/api/booklist/addbook", authenticateToken, books.verifyPayload, (req, res) => {
     const newBook = books.addBook(req.body);
     res.status(201).send(newBook);
-})
+});
 
 app.patch("/api/booklist/patch/:id", (req, res) => {
     const patch = req.body;
     const reqID = parseInt(req.params.id);
-
-    const bookIndex = bookArray.findIndex(book => book.id === reqID);
-    if (bookIndex === -1) {
-        res.status(404).send({ error: "Book not found" });
+    const update = books.patchBook(reqID, patch);
+    if (!books.patchBook(reqID, patch)) {
+        return res.status(404).send({ error: "Book not found" });
     }
-
-    bookArray[bookIndex] = { ...bookArray[bookIndex], ...patch };
-    res.status(201).send(bookArray[bookIndex]);
-
+    res.status(201).send(update);
 });
 
 app.get('/api/booklist/:id', (req, res) => {
-    const reqID = req.params.id;
-    try {
-        const book = bookArray.find(book => book.id === parseInt(reqID));
-        if(!book) {
-            throw new Error("Book ID " + reqID + " not found");
-        }
-        res.status(200).send(book);        
-    } catch (error) {
-        res.status(404).send({ error: "Book not found" });
+    const book = books.getBook(req);
+    if (!books.getBook(req)) {
+        return res.status(404).send({ error: "Book not found" });
     }
+    res.status(200).send(book);
 });
 
 app.delete('/api/booklist/deletebook/:id', authenticateToken, (req, res) => {
-    const reqID = parseInt(req.params.id);
-    const bookIndex = bookArray.findIndex(book => book.id === reqID);
-
-    if (bookIndex === -1) {
+    const book = books.deleteBook(req);
+    if (!book) {
         return res.status(404).send({ error: "Book not found" });
     }
-
-    bookArray.splice(bookIndex, 1);
-    return res.status(200).send({ message: `Book with ${reqID} has been removed` });
+    res.status(200).send(book);
 });
 
 

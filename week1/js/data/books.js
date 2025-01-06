@@ -24,7 +24,7 @@ bookArray.push({
     "genre": "biography"
 });
 
-const getBooks = ((req) => {
+const getBooklist = ((req) => {
     const { page = 1, limit = 10 } = req.query;
     const startIndex = (page - 1) * limit;
     const endIndex = startIndex + parseInt(limit);
@@ -49,4 +49,34 @@ const verifyPayload = ((req, res, next) => {
     next();
 });
 
-module.exports = { getBooks, addBook, verifyPayload };
+const patchBook = ((reqID, patch) => {
+
+    const bookIndex = bookArray.findIndex(book => book.id === reqID);
+    if (bookIndex === -1) {
+        return null;
+    }
+
+    bookArray[bookIndex] = { ...bookArray[bookIndex], ...patch };
+    return bookArray[bookIndex];
+});
+
+const getBook = ((req) => {
+    const reqID = parseInt(req.params.id);
+    const book = bookArray.find(book => book.id === reqID);
+    if (!book) {
+        return null;
+    }
+    return book;
+});
+
+const deleteBook = ((req) => {
+    const reqID = parseInt(req.params.id);
+    const bookIndex = bookArray.findIndex(book => book.id === reqID);
+
+    if (bookIndex === -1) {
+        return null;
+    }
+    return bookArray.splice(bookIndex, 1);
+});
+
+module.exports = { getBooklist, addBook, verifyPayload, patchBook, getBook, deleteBook };
