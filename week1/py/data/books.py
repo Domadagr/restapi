@@ -43,3 +43,11 @@ def get_book_by_id(book_id):
             return book
     return None
 
+
+def remove_book_by_id(book_id):
+    for i, book in enumerate(books):
+        if book['id'] == book_id:
+            books.pop(i)
+            return book_id
+    return None
+

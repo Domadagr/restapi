@@ -3,6 +3,7 @@ from typing import List
 from datetime import datetime
 import psutil
 from data import books
+import jwt
 
 app = FastAPI()
 start_time = datetime.now()
@@ -42,3 +43,6 @@ def get_book(book_id: int):
     return books.get_book_by_id(book_id)
 
 
+@app.delete("/api/booklist/delete/{book_id}")
+def remove_book(book_id: int):
+    return books.remove_book_by_id(book_id)
