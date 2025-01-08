@@ -2,8 +2,8 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const dotenv = require('dotenv');
 const books = require('./data/books');
+const sql = require('./db');
 
-//
 const app = express();
 app.use(express.json());
 const PORT = process.env.PORT || 3000;
@@ -84,3 +84,15 @@ app.delete('/api/booklist/deletebook/:id', authenticateToken, (req, res) => {
     }
     res.status(200).send(book);
 });
+
+
+async function testConnection() {
+    try {
+        const result = await sql`SELECT NOW()`;
+        console.log('Connection successful:', result);
+    } catch (err) {
+        console.error('Error connecting to database:', err);
+    }
+}
+
+testConnection();
