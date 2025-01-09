@@ -1,6 +1,9 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const dotenv = require('dotenv');
+const bcrypt = require('bcrypt');
+const sql = require('postgres');
+// local
 const books = require('./data/books');
 const sql = require('./db');
 
@@ -36,6 +39,16 @@ const authenticateToken = ((req, res, next) => {
     });
 });
 
+// Bcrypt
+const saltRounds = 10;
+const plainPassword = "testing123";
+
+bcrypt.hash(plainPassword, saltRounds, function(err, hash) {
+    // Store hash in your password DB.
+    console.log(hash)
+});
+
+
 // Start a listener
 app.listen(PORT, () => {
     console.log("Server listening on PORT:", PORT);
@@ -50,39 +63,43 @@ app.get("/api/status", (req, res) => {
     });
 });
 
-app.get("/api/booklist", (req, res) => {
-    res.status(200).send(books.getBooklist(req));
+app.post("/api/login", (req, res) => {
+    const user = req.body.user;
+    const pw = req.body.password;
+
+    
 });
 
-app.post("/api/booklist/addbook", authenticateToken, books.verifyPayload, (req, res) => {
-    const newBook = books.addBook(req.body);
-    res.status(201).send(newBook);
+app.get("/api/booklist", async (req, res) => {
+    const booklist = await books.getBooklist();
+    res.json(booklist);
 });
 
-app.patch("/api/booklist/patch/:id", (req, res) => {
-    const patch = req.body;
+app.post("/api/booklist/addbook", authenticateToken, books.verifyPayload, async (req, res) => {
+    const newBook = await books.addBook(req.body);
+    res.status(201).json(newBook);
+});
+
+app.patch("/api/booklist/patch/:id", async (req, res) => {
     const reqID = parseInt(req.params.id);
-    const update = books.patchBook(reqID, patch);
-    if (!books.patchBook(reqID, patch)) {
-        return res.status(404).send({ error: "Book not found" });
-    }
-    res.status(201).send(update);
+    const patchedBook = await books.patchBook(reqID, req.body);
+    res.status(200).send(patchedBook);
 });
 
-app.get('/api/booklist/:id', (req, res) => {
-    const book = books.getBook(req);
-    if (!books.getBook(req)) {
-        return res.status(404).send({ error: "Book not found" });
-    }
-    res.status(200).send(book);
-});
-
-app.delete('/api/booklist/deletebook/:id', authenticateToken, (req, res) => {
-    const book = books.deleteBook(req);
+app.get('/api/booklist/:id', async (req, res) => {
+    const book = await books.getBook(parseInt(req.params.id));
     if (!book) {
-        return res.status(404).send({ error: "Book not found" });
+        return res.status(404).json({ error: "Book not found" });
     }
-    res.status(200).send(book);
+    res.json(book);
+});
+
+app.delete('/api/booklist/deletebook/:id', authenticateToken, async (req, res) => {
+    const book = await books.deleteBook(parseInt(req.params.id));
+    if (!book) {
+        res.status(404).send({ error: "Book not found" });
+    }
+    res.json(book);
 });
 
 

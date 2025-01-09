@@ -1,22 +1,16 @@
-let bookArray = [];
-let bookID = 0;
+// Using postgresql 
+const sql = require('/Users/tommy/dev/js/chatgpt_restapi/restapi/week2/js/db.js');
 
-const getBooklist = ((req) => {
-    const { page = 1, limit = 10 } = req.query;
-    const startIndex = (page - 1) * limit;
-    const endIndex = startIndex + parseInt(limit);
+const getBooklist = async () => {
+    return await sql`select * from books`;
+};
 
-    return {
-        totalBooks: bookArray.length,
-        books: bookArray.slice(startIndex, endIndex)
-    };
-});
-
-const addBook = ((book) => {
-    const newBook = { "id": bookID++, ...book };
-    bookArray.push(newBook);
-    return newBook;
-});
+const addBook = async (book) => {
+    return await sql`
+    INSERT INTO books (title, author, year, genre)
+    VALUES (${book.title}, ${book.author}, ${book.year}, ${book.genre})
+    RETURNING *`;
+};
 
 const verifyPayload = ((req, res, next) => {
     const { title, author, year, genre } = req.body;
@@ -26,34 +20,30 @@ const verifyPayload = ((req, res, next) => {
     next();
 });
 
-const patchBook = ((reqID, patch) => {
+const patchBook = async (reqID, patch) => {
+    const [updateBook] = await sql`
+    UPDATE books
+    SET title = ${patch.title}, author = ${patch.author}, year = ${patch.year}, genre = ${patch.genre}
+    WHERE id = ${reqID}
+    RETURNING *`;
+    return updateBook;
+};
 
-    const bookIndex = bookArray.findIndex(book => book.id === reqID);
-    if (bookIndex === -1) {
-        return null;
-    }
+const getBook = async (id) => {
+    const [book] = await sql`
+        SELECT * FROM books
+        WHERE id = ${id}`;
 
-    bookArray[bookIndex] = { ...bookArray[bookIndex], ...patch };
-    return bookArray[bookIndex];
-});
-
-const getBook = ((req) => {
-    const reqID = parseInt(req.params.id);
-    const book = bookArray.find(book => book.id === reqID);
-    if (!book) {
-        return null;
-    }
     return book;
-});
+};
 
-const deleteBook = ((req) => {
-    const reqID = parseInt(req.params.id);
-    const bookIndex = bookArray.findIndex(book => book.id === reqID);
+const deleteBook = async (id) => {
+    const [book] = await sql`
+    DELETE FROM books
+    WHERE id = ${id}
+    RETURNING *`;
 
-    if (bookIndex === -1) {
-        return null;
-    }
-    return bookArray.splice(bookIndex, 1);
-});
+    return book;
+};
 
 module.exports = { getBooklist, addBook, verifyPayload, patchBook, getBook, deleteBook };
