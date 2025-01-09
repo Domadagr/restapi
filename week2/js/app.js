@@ -21,9 +21,6 @@ const generateAccessToken = ((username) => {
     const payload = { user: username }
     return jwt.sign(payload, process.env.TOKEN_SECRET, { expiresIn: '1800s' });
 })
-// Generate a token that can be used with postman for testing
-//const testUser = "Domadager";
-//console.log(generateAccessToken(testUser));
 
 // Authenticate token using express.js middleware
 const authenticateToken = ((req, res, next) => {
@@ -41,8 +38,6 @@ const authenticateToken = ((req, res, next) => {
 
 // Bcrypt
 const saltRounds = 10;
-const plainPassword = "testing123";
-
 
 // Start a listener
 app.listen(PORT, () => {
@@ -59,13 +54,20 @@ app.get("/api/status", (req, res) => {
 });
 
 app.post("/api/login", async (req, res) => {
-    const user = req.body.user;
-    const pw = req.body.password;
-    if (lh.loginHandler(user, pw)) {
-        console.log(generateAccessToken(user));
+    try {
+        const user = req.body.user;
+        const pw = req.body.password;
+        const authorized = await lh.loginHandler(user, pw);
+        if (authorized) {
+            token = generateAccessToken(user);
+            res.status(200).send({ token });
+        } else {
+            res.status(401).send({ error: "Invalid credentials" });
+        }
+    } catch (err) {
+        console.error("Error: ", err);
+        res.status(500).send({ error: "Internal server error" });
     }
-
-
 });
 
 app.get("/api/booklist", async (req, res) => {
@@ -100,11 +102,10 @@ app.delete('/api/booklist/deletebook/:id', authenticateToken, async (req, res) =
     res.json(book);
 });
 
-
 async function testConnection() {
     try {
         const result = await sql`SELECT NOW()`;
-        console.log('Connection successful:', result);
+        console.log('Connection successful:');
     } catch (err) {
         console.error('Error connecting to database:', err);
     }
