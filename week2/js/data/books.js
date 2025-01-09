@@ -1,5 +1,5 @@
 // Using postgresql 
-const sql = require('/Users/tommy/dev/js/chatgpt_restapi/restapi/week2/js/db.js');
+const sql = require('../db.js');
 
 const getBooklist = async () => {
     return await sql`select * from books`;

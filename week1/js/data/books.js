@@ -79,4 +79,4 @@ const deleteBook = ((req) => {
     return bookArray.splice(bookIndex, 1);
 });
 
-module.exports = { getBooklist, addBook, verifyPayload, patchBook, getBook, deleteBook };
+module.exports = { getBooklist, addBook, verifyPayload, patchBook, getBook, deleteBook, sql };

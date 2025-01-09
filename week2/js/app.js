@@ -5,7 +5,7 @@ const bcrypt = require('bcrypt');
 const sql = require('postgres');
 // local
 const books = require('./data/books');
-const sql = require('./db');
+const lh = require('./login');
 
 const app = express();
 app.use(express.json());
@@ -22,8 +22,8 @@ const generateAccessToken = ((username) => {
     return jwt.sign(payload, process.env.TOKEN_SECRET, { expiresIn: '1800s' });
 })
 // Generate a token that can be used with postman for testing
-const testUser = "Domadager";
-console.log(generateAccessToken(testUser));
+//const testUser = "Domadager";
+//console.log(generateAccessToken(testUser));
 
 // Authenticate token using express.js middleware
 const authenticateToken = ((req, res, next) => {
@@ -43,11 +43,6 @@ const authenticateToken = ((req, res, next) => {
 const saltRounds = 10;
 const plainPassword = "testing123";
 
-bcrypt.hash(plainPassword, saltRounds, function(err, hash) {
-    // Store hash in your password DB.
-    console.log(hash)
-});
-
 
 // Start a listener
 app.listen(PORT, () => {
@@ -63,11 +58,14 @@ app.get("/api/status", (req, res) => {
     });
 });
 
-app.post("/api/login", (req, res) => {
+app.post("/api/login", async (req, res) => {
     const user = req.body.user;
     const pw = req.body.password;
+    if (lh.loginHandler(user, pw)) {
+        console.log(generateAccessToken(user));
+    }
 
-    
+
 });
 
 app.get("/api/booklist", async (req, res) => {
