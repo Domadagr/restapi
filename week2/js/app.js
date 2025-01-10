@@ -71,35 +71,55 @@ app.post("/api/login", async (req, res) => {
 });
 
 app.get("/api/booklist", async (req, res) => {
-    const booklist = await books.getBooklist();
-    res.json(booklist);
+    try {
+        const booklist = await books.getBooklist();
+        res.status(200).send(booklist);
+    } catch (error) {
+        res.status(500).send({ error: error.message });
+    }
 });
 
 app.post("/api/booklist/addbook", authenticateToken, books.verifyPayload, async (req, res) => {
-    const newBook = await books.addBook(req.body);
-    res.status(201).json(newBook);
+    try {
+        const newBook = await books.addBook(req.body);
+        res.status(201).json(newBook);
+    } catch (error) {
+        res.status(500).send({ error: error.message });
+    }
 });
 
 app.patch("/api/booklist/patch/:id", async (req, res) => {
-    const reqID = parseInt(req.params.id);
-    const patchedBook = await books.patchBook(reqID, req.body);
-    res.status(200).send(patchedBook);
+    try {
+        const reqID = parseInt(req.params.id);
+        const patchedBook = await books.patchBook(reqID, req.body);
+        res.status(200).send(patchedBook);
+    } catch (error) {
+        res.status(500).send({ error: error.message });
+    }
 });
 
 app.get('/api/booklist/:id', async (req, res) => {
-    const book = await books.getBook(parseInt(req.params.id));
-    if (!book) {
-        return res.status(404).json({ error: "Book not found" });
+    try {
+        const book = await books.getBook(parseInt(req.params.id));
+        if (!book) {
+            return res.status(404).json({ error: "Book not found" });
+        }
+        res.json(book);
+    } catch (error) {
+        res.status(500).send({ error: error.message });
     }
-    res.json(book);
 });
 
 app.delete('/api/booklist/deletebook/:id', authenticateToken, async (req, res) => {
-    const book = await books.deleteBook(parseInt(req.params.id));
-    if (!book) {
-        res.status(404).send({ error: "Book not found" });
+    try {
+        const book = await books.deleteBook(parseInt(req.params.id));
+        if (!book) {
+            res.status(404).send({ error: "Book not found" });
+        }
+        res.json(book);
+    } catch (error) {
+        res.status(500).send({ error: error.message });
     }
-    res.json(book);
 });
 
 async function testConnection() {
