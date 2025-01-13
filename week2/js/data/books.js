@@ -18,17 +18,9 @@ const addBook = async (book) => {
         RETURNING *`;
         return result;
     } catch (error) {
-        throw new Error("Failed to get list, try again later");
+        throw new Error("Failed to add book, try again later");
     }
 };
-
-const verifyPayload = ((req, res, next) => {
-    const { title, author, year, genre } = req.body;
-    if (!title || !author || !year || !genre) {
-        return res.status(400).send({ error: "All fields required: Title, Author, Year, Genre" });
-    }
-    next();
-});
 
 const patchBook = async (reqID, patch) => {
     try {
@@ -39,7 +31,7 @@ const patchBook = async (reqID, patch) => {
         RETURNING *`;
         return updateBook;
     } catch (error) {
-        throw new Error("Failed to get list, try again later");
+        throw new Error("Failed to update book, try again later");
     } 
 };
 
@@ -51,7 +43,7 @@ const getBook = async (id) => {
 
     return book;
     } catch (error) {
-        throw new Error("Failed to get list, try again later");
+        throw new Error("Failed to retrieve book, try again later");
     } 
 };
 
@@ -64,8 +56,8 @@ const deleteBook = async (id) => {
     
         return book;
     } catch (error) {
-        throw new Error("Failed to get list, try again later");
+        throw new Error("Failed to delete book, try again later");
     } 
 };
 
-module.exports = { getBooklist, addBook, verifyPayload, patchBook, getBook, deleteBook };
+module.exports = { getBooklist, addBook, patchBook, getBook, deleteBook };

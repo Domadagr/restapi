@@ -1,8 +1,11 @@
 const express = require('express');
+const { body, param, validationResult } = require('express-validator');
 const jwt = require('jsonwebtoken');
 const dotenv = require('dotenv');
 const bcrypt = require('bcrypt');
 const sql = require('postgres');
+const swaggerJsdoc = require('swagger-jsdoc');
+const swaggerUi = require('swagger-ui-express');
 // local
 const books = require('./data/books');
 const lh = require('./login');
@@ -15,6 +18,21 @@ let bookID = 0;
 // Get config variables
 dotenv.config();
 process.env.TOKEN_SECRET;
+
+// Swagger
+
+const swaggerSpec = swaggerJsdoc({
+    definition: {
+        openapi: "3.0.0",
+        info: {
+            title: "Book API",
+            version: "1.0.0",
+        },
+    },
+    apis: ["./*.js", "./books/*.js"], 
+});
+
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Token generation :: using digitalocean tutorial for JWT
 const generateAccessToken = ((username) => {
@@ -53,7 +71,16 @@ app.get("/api/status", (req, res) => {
     });
 });
 
-app.post("/api/login", async (req, res) => {
+app.post("/api/login",
+    [
+        body('user').isString().withMessage('Email must be a string').trim().notEmpty().withMessage('Email is required'),
+        body('password').isString().withMessage('Password must be a string').trim().notEmpty().withMessage('Password is required'),
+    ], 
+    async (req, res) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ error: errors.array() });
+        }
     try {
         const user = req.body.user;
         const pw = req.body.password;
@@ -70,6 +97,21 @@ app.post("/api/login", async (req, res) => {
     }
 });
 
+/**
+ * @swagger
+ * /api/booklist:
+ *   get:
+ *     summary: Retrieve a list of books
+ *     responses:
+ *       200:
+ *         description: A list of books
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ */
 app.get("/api/booklist", async (req, res) => {
     try {
         const booklist = await books.getBooklist();
@@ -79,7 +121,100 @@ app.get("/api/booklist", async (req, res) => {
     }
 });
 
-app.post("/api/booklist/addbook", authenticateToken, books.verifyPayload, async (req, res) => {
+/**
+ * @swagger
+ * /api/booklist/addbook:
+ *   post:
+ *     summary: Add a new book to the booklist
+ *     security:
+ *       - bearerAuth: [] # Specify the use of Bearer Token for authentication
+ *     tags:
+ *       - Books
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - title
+ *               - author
+ *               - year
+ *             properties:
+ *               title:
+ *                 type: string
+ *                 description: Title of the book.
+ *               author:
+ *                 type: string
+ *                 description: Author of the book.
+ *               year:
+ *                 type: integer
+ *                 minimum: 0
+ *                 description: Publication year of the book.
+ *               genre:
+ *                 type: string
+ *                 description: Genre of the book (optional).
+ *     responses:
+ *       201:
+ *         description: The newly added book.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: integer
+ *                   description: ID of the new book.
+ *                 title:
+ *                   type: string
+ *                   description: Title of the book.
+ *                 author:
+ *                   type: string
+ *                   description: Author of the book.
+ *                 year:
+ *                   type: integer
+ *                   description: Publication year of the book.
+ *                 genre:
+ *                   type: string
+ *                   description: Genre of the book.
+ *       400:
+ *         description: Validation error or missing required fields.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       msg:
+ *                         type: string
+ *                         description: Validation error message.
+ *                       param:
+ *                         type: string
+ *                         description: Field with the error.
+ *                       location:
+ *                         type: string
+ *                         description: Location of the error (e.g., "body").
+ *       401:
+ *         description: Unauthorized (token missing or invalid).
+ *       500:
+ *         description: Internal server error.
+ */
+app.post("/api/booklist/addbook",
+    [
+        body('title').isString().withMessage('Title must be a string').trim().notEmpty().withMessage('Title is required'),
+        body('author').isString().withMessage('Author must be a string').trim().notEmpty().withMessage('Author is required'),
+        body('year').isInt({ min: 0 }).withMessage('Year must be a positive integer').trim().notEmpty().withMessage('Year is required'),
+        body('genre').optional().isString().withMessage('Genre must be a string'),
+    ],
+    authenticateToken, async (req, res) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ error: errors.array() });
+        }
     try {
         const newBook = await books.addBook(req.body);
         res.status(201).json(newBook);
@@ -88,7 +223,18 @@ app.post("/api/booklist/addbook", authenticateToken, books.verifyPayload, async 
     }
 });
 
-app.patch("/api/booklist/patch/:id", async (req, res) => {
+
+app.patch("/api/booklist/patch/:id",
+    [
+        param('id')
+            .isInt({ min: 0 }).withMessage('ID must be a positive integer')
+            .toInt()
+    ], 
+    async (req, res) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ error: errors.array() });
+        }
     try {
         const reqID = parseInt(req.params.id);
         const patchedBook = await books.patchBook(reqID, req.body);
@@ -98,7 +244,17 @@ app.patch("/api/booklist/patch/:id", async (req, res) => {
     }
 });
 
-app.get('/api/booklist/:id', async (req, res) => {
+app.get('/api/booklist/:id',
+    [
+        param('id')
+            .isInt({ min: 0 }).withMessage('ID must be a positive integer')
+            .toInt()
+    ],  
+    async (req, res) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ error: errors.array() });
+        }
     try {
         const book = await books.getBook(parseInt(req.params.id));
         if (!book) {
@@ -110,7 +266,17 @@ app.get('/api/booklist/:id', async (req, res) => {
     }
 });
 
-app.delete('/api/booklist/deletebook/:id', authenticateToken, async (req, res) => {
+app.delete('/api/booklist/deletebook/:id',
+    [
+        param('id')
+            .isInt({ min: 0 }).withMessage('ID must be a positive integer')
+            .toInt()
+    ],
+    authenticateToken, async (req, res) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty) {
+            return res.status(400).json({ error: errors.array() });
+        }
     try {
         const book = await books.deleteBook(parseInt(req.params.id));
         if (!book) {
