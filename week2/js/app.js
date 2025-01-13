@@ -97,21 +97,7 @@ app.post("/api/login",
     }
 });
 
-/**
- * @swagger
- * /api/booklist:
- *   get:
- *     summary: Retrieve a list of books
- *     responses:
- *       200:
- *         description: A list of books
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 type: object
- */
+
 app.get("/api/booklist", async (req, res) => {
     try {
         const booklist = await books.getBooklist();
@@ -121,88 +107,7 @@ app.get("/api/booklist", async (req, res) => {
     }
 });
 
-/**
- * @swagger
- * /api/booklist/addbook:
- *   post:
- *     summary: Add a new book to the booklist
- *     security:
- *       - bearerAuth: [] # Specify the use of Bearer Token for authentication
- *     tags:
- *       - Books
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - title
- *               - author
- *               - year
- *             properties:
- *               title:
- *                 type: string
- *                 description: Title of the book.
- *               author:
- *                 type: string
- *                 description: Author of the book.
- *               year:
- *                 type: integer
- *                 minimum: 0
- *                 description: Publication year of the book.
- *               genre:
- *                 type: string
- *                 description: Genre of the book (optional).
- *     responses:
- *       201:
- *         description: The newly added book.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 id:
- *                   type: integer
- *                   description: ID of the new book.
- *                 title:
- *                   type: string
- *                   description: Title of the book.
- *                 author:
- *                   type: string
- *                   description: Author of the book.
- *                 year:
- *                   type: integer
- *                   description: Publication year of the book.
- *                 genre:
- *                   type: string
- *                   description: Genre of the book.
- *       400:
- *         description: Validation error or missing required fields.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: array
- *                   items:
- *                     type: object
- *                     properties:
- *                       msg:
- *                         type: string
- *                         description: Validation error message.
- *                       param:
- *                         type: string
- *                         description: Field with the error.
- *                       location:
- *                         type: string
- *                         description: Location of the error (e.g., "body").
- *       401:
- *         description: Unauthorized (token missing or invalid).
- *       500:
- *         description: Internal server error.
- */
+
 app.post("/api/booklist/addbook",
     [
         body('title').isString().withMessage('Title must be a string').trim().notEmpty().withMessage('Title is required'),
