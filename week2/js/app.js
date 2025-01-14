@@ -6,6 +6,10 @@ const bcrypt = require('bcrypt');
 const sql = require('postgres');
 const swaggerJsdoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
+// imports
+import { expect, test } from 'vitest';
+import { faker } from '@faker-js/faker';
+import { mock } from 'vitest-mock-context';
 // local
 const books = require('./data/books');
 const lh = require('./login');
@@ -20,7 +24,6 @@ dotenv.config();
 process.env.TOKEN_SECRET;
 
 // Swagger
-
 const swaggerSpec = swaggerJsdoc({
     definition: {
         openapi: "3.0.0",
@@ -33,6 +36,11 @@ const swaggerSpec = swaggerJsdoc({
 });
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+// vitest
+const books = {
+    addBook: jest.fn(),
+  };
 
 // Token generation :: using digitalocean tutorial for JWT
 const generateAccessToken = ((username) => {
