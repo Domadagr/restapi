@@ -24,12 +24,6 @@ SECRET_KEY = os.environ.get('SECRET_KEY')
 ALGORITHM = os.environ.get('ALGORITHM')
 ACCESS_TOKEN_EXPIRE_MINUTES = os.environ.get('ACCESS_TOKEN_EXPIRE_MINUTES')
 
-fake_users_db = {
-    "testuser": {
-        "username": "testuser",
-        "hashed_password": "$2b$12$KIXQJkK2J3hxG1/JTZZ7gOa7Z2.bTfQaQi9gY8opLgfKwqKPPogkS",  # "password"
-    }
-}
 
 from pydantic import BaseModel
 
