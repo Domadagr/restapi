@@ -13,10 +13,19 @@ from dotenv import load_dotenv
 import os
 
 from data import books
+from data import books
+from data.books import getbooks, init_db, db_pool
+from pydantic import BaseModel
+# Rewrite login handler and JWT generation
 
 app = FastAPI()
 start_time = datetime.now()
 load_dotenv()
+
+@app.on_event("startup")
+async def startup():
+    global db_pool
+    db_pool = await init_db()
 
 
 # AUTH HANDLER
@@ -25,13 +34,9 @@ ALGORITHM = os.environ.get('ALGORITHM')
 ACCESS_TOKEN_EXPIRE_MINUTES = os.environ.get('ACCESS_TOKEN_EXPIRE_MINUTES')
 
 
-from pydantic import BaseModel
-
 class LoginRequest(BaseModel):
     username: str
     password: str
-
-
 
 # Password hashing context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -42,14 +47,6 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 # Helper function to verify passwords
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
-
-
-# Get user from fake DB
-def get_user(username: str):
-    user = fake_users_db.get(username)
-    if user:
-        return {"username": username, **user}
-    return None
 
 
 # Authenticate user
@@ -75,13 +72,8 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
 # Endpoint to generate token
 @app.post("/token")
 def login(request: LoginRequest):
-    if request.username == "testuser" and request.password == "password":
-        # Replace this with actual user validation logic
-        access_token = create_access_token(data={"sub": request.username})
-        return {"access_token": access_token, "token_type": "bearer"}
-    else:
-        raise HTTPException(status_code=401, detail="Invalid username or password")
-
+    # rewrite this
+    return None
 
 # Dependency to get the current user
 def get_current_user(token: str = Depends(oauth2_scheme)):
@@ -120,23 +112,39 @@ def status(current_user: dict = Depends(get_current_user)):
 @app.get("/api/booklist")
 async def booklist():
     books = await getbooks()
+    return books
 
 
 @app.post("/api/booklist/addbook")
-def add_book(book: books.Book):
-    return books.add_book(book)
+async def add_book(book: books.Book):
+    try:
+        new_book = await books.add_book(db_pool, book)
+        return new_book
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.put("/api/booklist/update/{book_id}")
-def update_book(book_id: int, book: books.Book):
-    return books.update_book(book_id, book)
+async def update_book(book_id: int, book: books.Book):
+    try:
+        update = await books.update_book(book_id, book)
+        return update
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/api/booklist/get/{book_id}")
-def get_book(book_id: int):
-    return books.get_book_by_id(book_id)
+async def get_book(book_id: int):
+    try:
+        book = await books.get_book_by_id(book_id)
+        return book
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.delete("/api/booklist/delete/{book_id}")
-def remove_book(book_id: int):
-    return books.remove_book_by_id(book_id)
+async def remove_book(book_id: int):
+    try:
+        await books.remove_book_by_id(book_id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=(e))

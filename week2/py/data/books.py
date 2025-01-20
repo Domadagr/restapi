@@ -1,5 +1,7 @@
 import os
+from http.client import HTTPException
 
+from asyncpg import Pool
 from pydantic import BaseModel
 from typing import Optional
 import asyncpg
@@ -29,54 +31,79 @@ async def close_db():
         await db_pool.close()
 
 
-bookID = 3
-
-
 class Book(BaseModel):
-    id: Optional[int] = None,
     title: str
     author: str
     year: int
-
-
-books = [
-    {"id": 1, "title": "The Great Adventure", "author": "John Doe", "year": 2005},
-    {"id": 2, "title": "Learning FastAPI", "author": "Jane Smith", "year": 2021},
-]
+    genre: str
 
 
 async def getbooks():
     async with db_pool.acquire() as conn:
-        return await conn.fetch('SELECT * FROM books')
+        try:
+            booklist = await conn.fetch('SELECT * FROM books')
+            return booklist
+        except Exception as e:
+            raise RuntimeError(f"Error fetching list {e}")
 
 
-def add_book(book):
-    global bookID
-    new_book = {"id": bookID, **book.dict(exclude={"id"})}  # Exclude 'id' from the request
-    books.append(new_book)
-    bookID += 1
-    return new_book
+async def add_book(pool: Pool, book: Book):
+    async with pool.acquire() as conn:
+        try:
+            query = """
+            INSERT INTO books(title, author, year, genre)
+            VALUES ($1, $2, $3, $4)
+            RETURNING *;
+            """
+            result = await conn.fetchrow(query, book.title, book.author, book.year, book.genre)
+            return dict(result)
+        except Exception as e:
+            raise RuntimeError(f"Error inserting item: {e}")
 
 
-def update_book(book_id, updated_book):
-    for i, book in enumerate(books):
-        if book['id'] == book_id:
-            books[i] = updated_book
-            return updated_book
-    return None
+async def update_book(book_id: int, book: Book):
+    async with db_pool.acquire() as conn:
+        try:
+            query = """
+            UPDATE books 
+            SET title = $1, author = $2, year = $3, genre = $4
+            WHERE id = $5
+            RETURNING *;
+            """
+            result = await conn.fetchrow(query, book.title, book.author, book.year, book.genre, book_id)
+            if result:
+                return dict(result)
+            else:
+                raise RuntimeError(f"Book with id {book_id} not found.")
+        except Exception as e:
+            raise RuntimeError(f"Error inserting item: {e}")
 
 
-def get_book_by_id(book_id):
-    for i, book in enumerate(books):
-        if book['id'] == book_id:
-            return book
-    return None
+async def get_book_by_id(book_id):
+  async with db_pool.acquire() as conn:
+      try:
+          query = """
+          SELECT * FROM books
+          WHERE id = $1;
+          """
+          result = await conn.fetchrow(query, book_id)
+          if result:
+              return dict(result)
+          else:
+              raise RuntimeError(f"Book with id {book_id} not found.")
+      except Exception as e:
+          raise  RuntimeError(f"Error finding item: {e}")
 
 
-def remove_book_by_id(book_id):
-    for i, book in enumerate(books):
-        if book['id'] == book_id:
-            books.pop(i)
-            return book_id
-    return None
+async def remove_book_by_id(book_id):
+    async with db_pool.acquire() as conn:
+        try:
+            query = """
+            DELETE FROM books
+            WHERE id = $1
+            LIMIT 1
+            """
+            await conn.execute(query, book_id)
+        except Exception as e:
+            raise RuntimeError(f"Error deleting entry: {e}")
 
