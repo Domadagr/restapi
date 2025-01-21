@@ -2,7 +2,7 @@ import os
 from http.client import HTTPException
 
 from asyncpg import Pool
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional
 import asyncpg
 import asyncio
@@ -32,11 +32,22 @@ async def close_db():
 
 
 class Book(BaseModel):
-    title: str
-    author: str
-    year: int
-    genre: str
+    title: str = Field(..., min_length=1, max_length=255)
+    author: str = Field(..., min_length=1, max_length=255)
+    year: int = Field(..., ge=1000, le=2100)
+    genre: Optional[str] = Field(None, max_length=100)
 
+    @field_validator("title", "author")
+    def no_empty_strings(self, value):
+        if not value.strip():
+            raise ValueError("Field cannot be empty")
+        return value
+
+    @field_validator('year')
+    def no_empty_year(self, value):
+        if value > 2100 or value < 1000:
+            raise ValueError("Value out of bounds")
+        return value
 
 async def getbooks():
     async with db_pool.acquire() as conn:

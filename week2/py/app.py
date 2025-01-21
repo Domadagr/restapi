@@ -111,8 +111,11 @@ def status(current_user: dict = Depends(get_current_user)):
 
 @app.get("/api/booklist")
 async def booklist():
-    books = await getbooks()
-    return books
+    try:
+        books = await getbooks()
+        return books
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/api/booklist/addbook")
