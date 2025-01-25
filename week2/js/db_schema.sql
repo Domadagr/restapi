@@ -7,9 +7,11 @@ CREATE TABLE books (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TYPE user_type AS ENUM ('admin', 'editor', 'user');
+
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
-    email VARCHAR(100) NOT NULL,
+    username VARCHAR(100) NOT NULL,
     password VARCHAR(255) NOT NULL,
-    user_type VARCHAR(100) NOT NULL
+    user_type user_type NOT NULL
 );
