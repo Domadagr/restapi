@@ -13,17 +13,33 @@ from dotenv import load_dotenv
 import os
 
 from data import books
+<<<<<<< HEAD
+=======
+from data import books
+from data.books import getbooks, init_db, db_pool
+from pydantic import BaseModel
+# Rewrite login handler and JWT generation
+>>>>>>> 11fc9c2117f4fa4af8c054f9f5b0c0d05a637c14
 
 app = FastAPI()
 start_time = datetime.now()
 load_dotenv()
 
+<<<<<<< HEAD
+=======
+@app.on_event("startup")
+async def startup():
+    global db_pool
+    db_pool = await init_db()
+
+>>>>>>> 11fc9c2117f4fa4af8c054f9f5b0c0d05a637c14
 
 # AUTH HANDLER
 SECRET_KEY = os.environ.get('SECRET_KEY')
 ALGORITHM = os.environ.get('ALGORITHM')
 ACCESS_TOKEN_EXPIRE_MINUTES = os.environ.get('ACCESS_TOKEN_EXPIRE_MINUTES')
 
+<<<<<<< HEAD
 fake_users_db = {
     "testuser": {
         "username": "testuser",
@@ -32,13 +48,18 @@ fake_users_db = {
 }
 
 from pydantic import BaseModel
+=======
+>>>>>>> 11fc9c2117f4fa4af8c054f9f5b0c0d05a637c14
 
 class LoginRequest(BaseModel):
     username: str
     password: str
 
+<<<<<<< HEAD
 
 
+=======
+>>>>>>> 11fc9c2117f4fa4af8c054f9f5b0c0d05a637c14
 # Password hashing context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -50,6 +71,7 @@ def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
 
 
+<<<<<<< HEAD
 # Get user from fake DB
 def get_user(username: str):
     user = fake_users_db.get(username)
@@ -58,6 +80,8 @@ def get_user(username: str):
     return None
 
 
+=======
+>>>>>>> 11fc9c2117f4fa4af8c054f9f5b0c0d05a637c14
 # Authenticate user
 def authenticate_user(username: str, password: str):
     user = get_user(username)
@@ -81,6 +105,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
 # Endpoint to generate token
 @app.post("/token")
 def login(request: LoginRequest):
+<<<<<<< HEAD
     if request.username == "testuser" and request.password == "password":
         # Replace this with actual user validation logic
         access_token = create_access_token(data={"sub": request.username})
@@ -88,6 +113,10 @@ def login(request: LoginRequest):
     else:
         raise HTTPException(status_code=401, detail="Invalid username or password")
 
+=======
+    # rewrite this
+    return None
+>>>>>>> 11fc9c2117f4fa4af8c054f9f5b0c0d05a637c14
 
 # Dependency to get the current user
 def get_current_user(token: str = Depends(oauth2_scheme)):
@@ -125,6 +154,7 @@ def status(current_user: dict = Depends(get_current_user)):
 
 @app.get("/api/booklist")
 async def booklist():
+<<<<<<< HEAD
     books = await getbooks()
 
 
@@ -146,3 +176,45 @@ def get_book(book_id: int):
 @app.delete("/api/booklist/delete/{book_id}")
 def remove_book(book_id: int):
     return books.remove_book_by_id(book_id)
+=======
+    try:
+        books = await getbooks()
+        return books
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/booklist/addbook")
+async def add_book(book: books.Book):
+    try:
+        new_book = await books.add_book(db_pool, book)
+        return new_book
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.put("/api/booklist/update/{book_id}")
+async def update_book(book_id: int, book: books.Book):
+    try:
+        update = await books.update_book(book_id, book)
+        return update
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/booklist/get/{book_id}")
+async def get_book(book_id: int):
+    try:
+        book = await books.get_book_by_id(book_id)
+        return book
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.delete("/api/booklist/delete/{book_id}")
+async def remove_book(book_id: int):
+    try:
+        await books.remove_book_by_id(book_id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=(e))
+>>>>>>> 11fc9c2117f4fa4af8c054f9f5b0c0d05a637c14
