@@ -1,15 +1,9 @@
 const express = require('express');
 const { body, param, validationResult } = require('express-validator');
-const jwt = require('jsonwebtoken');
 const dotenv = require('dotenv');
-const bcrypt = require('bcrypt');
 const sql = require('postgres');
 const swaggerJsdoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
-// imports
-import { expect, test } from 'vitest';
-import { faker } from '@faker-js/faker';
-import { mock } from 'vitest-mock-context';
 // local
 const books = require('./data/books');
 const lh = require('./login');
@@ -37,33 +31,6 @@ const swaggerSpec = swaggerJsdoc({
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-// vitest
-const books = {
-    addBook: jest.fn(),
-  };
-
-// Token generation :: using digitalocean tutorial for JWT
-const generateAccessToken = ((username) => {
-    const payload = { user: username }
-    return jwt.sign(payload, process.env.TOKEN_SECRET, { expiresIn: '1800s' });
-})
-
-// Authenticate token using express.js middleware
-const authenticateToken = ((req, res, next) => {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
-
-    if(token == null) return res.status(401);
-
-    jwt.verify(token, process.env.TOKEN_SECRET, (err, user) => {
-        if (err) return res.status(403);
-        req.user = user;
-        next();
-    });
-});
-
-// Bcrypt
-const saltRounds = 10;
 
 // Start a listener
 app.listen(PORT, () => {
@@ -94,7 +61,7 @@ app.post("/api/login",
         const pw = req.body.password;
         const authorized = await lh.loginHandler(user, pw);
         if (authorized) {
-            token = generateAccessToken(user);
+            const token = await lh.generateAccessToken(user);
             res.status(200).send({ token });
         } else {
             res.status(401).send({ error: "Invalid credentials" });
@@ -123,7 +90,7 @@ app.post("/api/booklist/addbook",
         body('year').isInt({ min: 0 }).withMessage('Year must be a positive integer').trim().notEmpty().withMessage('Year is required'),
         body('genre').optional().isString().withMessage('Genre must be a string'),
     ],
-    authenticateToken, async (req, res) => {
+    lh.authenticateToken, async (req, res) => {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
             return res.status(400).json({ error: errors.array() });
@@ -143,7 +110,7 @@ app.patch("/api/booklist/patch/:id",
             .isInt({ min: 0 }).withMessage('ID must be a positive integer')
             .toInt()
     ], 
-    async (req, res) => {
+    lh.authenticateToken('admin', 'editor'), async (req, res) => {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
             return res.status(400).json({ error: errors.array() });
@@ -163,7 +130,7 @@ app.get('/api/booklist/:id',
             .isInt({ min: 0 }).withMessage('ID must be a positive integer')
             .toInt()
     ],  
-    async (req, res) => {
+    lh.authenticateToken('user'), async (req, res) => {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
             return res.status(400).json({ error: errors.array() });
@@ -185,7 +152,7 @@ app.delete('/api/booklist/deletebook/:id',
             .isInt({ min: 0 }).withMessage('ID must be a positive integer')
             .toInt()
     ],
-    authenticateToken, async (req, res) => {
+    lh.authenticateToken('admin'), async (req, res) => {
         const errors = validationResult(req);
         if (!errors.isEmpty) {
             return res.status(400).json({ error: errors.array() });
@@ -211,3 +178,4 @@ async function testConnection() {
 }
 
 testConnection();
+module.exports = app;
