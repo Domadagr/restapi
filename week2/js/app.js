@@ -11,7 +11,6 @@ const lh = require('./login');
 const app = express();
 app.use(express.json());
 const PORT = process.env.PORT || 3000;
-let bookID = 0;
 
 // Get config variables
 dotenv.config();
@@ -90,7 +89,7 @@ app.post("/api/booklist/addbook",
         body('year').isInt({ min: 0 }).withMessage('Year must be a positive integer').trim().notEmpty().withMessage('Year is required'),
         body('genre').optional().isString().withMessage('Genre must be a string'),
     ],
-    lh.authenticateToken, async (req, res) => {
+    lh.authenticateToken('admin', 'editor'), async (req, res) => {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
             return res.status(400).json({ error: errors.array() });
@@ -108,7 +107,15 @@ app.patch("/api/booklist/patch/:id",
     [
         param('id')
             .isInt({ min: 0 }).withMessage('ID must be a positive integer')
-            .toInt()
+            .toInt(),
+            body('title')
+            .isLength({ max: 255 }).withMessage('Title must not exceed 100 characters'),
+            body('author')
+            .isLength({ max: 255 }).withMessage('Author must not exceed 100 characters'),
+            body('year')
+            .isInt({ min: 1400, max: 2060 }).withMessage('Year must be a number'),
+            body('genre')
+            .isLength({ max: 100 }).withMessage('Genre must not exceed 100 characters'),
     ], 
     lh.authenticateToken('admin', 'editor'), async (req, res) => {
         const errors = validationResult(req);
@@ -128,14 +135,15 @@ app.get('/api/booklist/:id',
     [
         param('id')
             .isInt({ min: 0 }).withMessage('ID must be a positive integer')
-            .toInt()
+            .toInt(),
     ],  
-    lh.authenticateToken('user'), async (req, res) => {
+    lh.authenticateToken('admin', 'editor', 'user'), async (req, res) => {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
             return res.status(400).json({ error: errors.array() });
         }
     try {
+
         const book = await books.getBook(parseInt(req.params.id));
         if (!book) {
             return res.status(404).json({ error: "Book not found" });
