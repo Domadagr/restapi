@@ -237,9 +237,9 @@ describe('Security tests', () => {
       .set('Authorization', `Bearer ${sessionToken}`);
 
     console.log(res);
-    // Assert the response status code
-    expect(res.statusCode).toBe(400); // Expecting a validation failure or rejection
-    expect(res.body).toHaveProperty('error'); // Ensure there's an error message
+
+    expect(res.statusCode).toBe(400); 
+    expect(res.body).toHaveProperty('error'); 
   });
 });
 
