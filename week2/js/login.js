@@ -10,10 +10,8 @@ const generateAccessToken = (async (username) => {
 })
 
 // Authenticate token using express.js middleware
-function authenticateToken(requiredRole = []) {
-    if (typeof requiredRole === 'string') {
-        requiredRole = [requiredRole];
-    }
+function authenticateToken(requiredRole) {
+
 
     return async (req, res, next) => {
         const authHeader = req.headers['authorization'];
@@ -32,6 +30,7 @@ function authenticateToken(requiredRole = []) {
             }
 
             const userRole = result[0].user_type;
+
             if (requiredRole.length && !requiredRole.includes(userRole)) {
                 return res.status(403).json({ message: 'Forbidden: Insufficient permissions' });
             }

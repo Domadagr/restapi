@@ -6,6 +6,12 @@ require('dotenv').config({ path: '.env.test' });
 const sql = require('../db');
 
 let sessionToken = "";
+const adminuser = process.env.ADMIN_USER;
+const adminuser_pw = process.env.ADMIN_USER_PW;
+const editoruser = process.env.EDITOR_USER;
+const editoruser_pw = process.env.EDITOR_USER_PW;
+const regularuser = process.env.USER;
+const regularuser_pw = process.env.USER_PW;
 
 beforeAll(async () => {
   const query = await sql`
@@ -40,8 +46,8 @@ describe('Test login handler', () => {
   describe('POST /api/login with valid credentials', () => {
     it('should log user in', async () => {
       const user = {
-        "user": "adminuser",
-        "password": "aperture4231"
+        "user": adminuser,
+        "password": adminuser_pw
       };
       const res = await request(app)
         .post('/api/login')
@@ -162,6 +168,81 @@ describe('Test find book by ID', () => {
     });
 });
 
+describe('Test RBAC protected routes', () => {
+  describe('Get server status as editor', () => {
+    it('should fail and return 401', async () => {
+      const user = {
+        "user": "editoruser",
+        "password": editoruser_pw
+      };
+      const getToken = await request(app)
+        .post('/api/login')
+        .send(user)
+        .set('Content-Type', 'application/json');
+      
+      const editorToken = getToken.body.token;
+
+      const res = await request(app)
+      .get('/api/status')
+      .set('Content-type', 'application/json')
+      .set('Authorization', `Bearer ${editorToken}`);
+
+      expect(res.statusCode).toBe(403);
+    });
+  });
+
+  describe('POST /api/booklist/addbook with valid data as EDITOR ROLE', () => {
+    it('should return the book added and status 201', async () => {
+      const user = {
+        "user": editoruser,
+        "password": editoruser_pw
+      };
+      const getToken = await request(app)
+      .post('/api/login')
+      .send(user)
+      .set('Content-Type', 'application/json');
+    
+    const editorToken = getToken.body.token;
+      const book = {
+        "title": "TOKENS, WHY H8",
+        "author": "Mock Vitest",
+        "year": 2005,
+        "genre": "No help"
+      };
+
+      const res = await request(app)
+        .post('/api/booklist/addbook')
+        .send(book)
+        .set('Content-type', 'application/json')
+        .set('Authorization', `Bearer ${editorToken}`);
+      
+        expect(res.statusCode).toBe(201);
+        expect(Array.isArray(res.body)).toBe(true);
+        expect(res.body.length).toBeGreaterThan(0);
+        expect(res.body[0]).toHaveProperty('id');
+        expect(res.body[0]).toHaveProperty('title');
+        expect(res.body[0]).toHaveProperty('author');
+    });
+  });
+});
+
+describe('Security tests', () => {
+  it('should prevent SQL injection attempts', async () => {
+    // SQL injection payload
+    const maliciousInput = "1 OR 1=1";
+
+    const res = await request(app)
+      .get(`/api/booklist/${maliciousInput}`)
+      .set('Content-type', 'application/json')
+      .set('Authorization', `Bearer ${sessionToken}`);
+
+    console.log(res);
+    // Assert the response status code
+    expect(res.statusCode).toBe(400); // Expecting a validation failure or rejection
+    expect(res.body).toHaveProperty('error'); // Ensure there's an error message
+  });
+});
+
 describe.concurrent('Parallel testing of API', () => {
   it('should return the book given by id 3 and status 200', async () => {
     const testId = 3;
@@ -217,7 +298,7 @@ describe.concurrent('Parallel testing of API', () => {
     expect(res.body).toHaveProperty('year', 1966); 
   });
 
-  it('should fail update book with id 2 and return status 400', async () => {
+  it('should fail, invalid field length, return 400', async () => {
     const update = {
       "title": "Over",
       "author": "Load",

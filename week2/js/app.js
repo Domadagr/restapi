@@ -36,7 +36,7 @@ app.listen(PORT, () => {
     console.log("Server listening on PORT:", PORT);
 });
 
-app.get("/api/status", (req, res) => {
+app.get("/api/status", lh.authenticateToken('admin'), (req, res) => {
     res.status(200).send({
         status: "Running",
         uptime: process.uptime(),
@@ -89,7 +89,7 @@ app.post("/api/booklist/addbook",
         body('year').isInt({ min: 0 }).withMessage('Year must be a positive integer').trim().notEmpty().withMessage('Year is required'),
         body('genre').optional().isString().withMessage('Genre must be a string'),
     ],
-    lh.authenticateToken('admin', 'editor'), async (req, res) => {
+    lh.authenticateToken(['admin', 'editor']), async (req, res) => {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
             return res.status(400).json({ error: errors.array() });
